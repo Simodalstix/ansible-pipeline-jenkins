@@ -1,0 +1,6 @@
+*.retry
+.vault_pass
+.vagrant/
+*.log
+node_modules/
+coverage/

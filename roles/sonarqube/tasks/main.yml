@@ -33,6 +33,16 @@
     state: present
   become_user: postgres
 
+- name: Configure PostgreSQL for low memory
+  lineinfile:
+    path: /etc/postgresql/14/main/postgresql.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^#?shared_buffers', line: 'shared_buffers = 128MB' }
+    - { regexp: '^#?effective_cache_size', line: 'effective_cache_size = 512MB' }
+  notify: restart postgresql
+
 - name: Create sonarqube system user
   user:
     name: sonarqube

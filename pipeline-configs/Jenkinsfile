@@ -94,13 +94,13 @@ pipeline {
         success {
             slackSend(
                 color: 'good',
-                message: "✅ Pipeline succeeded: ${env.JOB_NAME} - ${env.BUILD_NUMBER}"
+                message: "Pipeline succeeded: ${env.JOB_NAME} - ${env.BUILD_NUMBER}"
             )
         }
         failure {
             slackSend(
                 color: 'danger',
-                message: "❌ Pipeline failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}"
+                message: "Pipeline failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}"
             )
         }
     }

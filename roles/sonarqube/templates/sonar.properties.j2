@@ -3,3 +3,6 @@ sonar.jdbc.password={{ sonar_db_password }}
 sonar.jdbc.url=jdbc:postgresql://localhost/sonarqube
 sonar.web.host=0.0.0.0
 sonar.web.port=9000
+sonar.web.javaOpts=-Xmx1024m -Xms512m
+sonar.ce.javaOpts=-Xmx512m -Xms128m
+sonar.search.javaOpts=-Xmx512m -Xms512m

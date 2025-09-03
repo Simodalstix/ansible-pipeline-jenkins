@@ -32,6 +32,13 @@
     owner: nexus
     group: nexus
 
+- name: Configure Nexus JVM options
+  template:
+    src: nexus.vmoptions.j2
+    dest: /opt/nexus/bin/nexus.vmoptions
+    owner: nexus
+    group: nexus
+
 - name: Configure Nexus service
   template:
     src: nexus.service.j2
