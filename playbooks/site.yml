@@ -11,25 +11,15 @@
   roles:
     - docker
 
-- name: Deploy Jenkins
-  hosts: jenkins
+- name: Deploy CI/CD Stack
+  hosts: cicd
   become: yes
   roles:
     - jenkins
-
-- name: Deploy Nexus
-  hosts: nexus
-  become: yes
-  roles:
     - nexus
-
-- name: Deploy SonarQube
-  hosts: sonar
-  become: yes
-  roles:
     - sonarqube
 
-- name: Deploy Nginx Proxy
+- name: Deploy App Server
   hosts: app
   become: yes
   roles:
