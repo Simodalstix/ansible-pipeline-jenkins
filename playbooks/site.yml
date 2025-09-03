@@ -1,0 +1,36 @@
+---
+- name: Deploy CI/CD Infrastructure
+  hosts: all
+  become: yes
+  roles:
+    - common
+
+- name: Setup Docker
+  hosts: all
+  become: yes
+  roles:
+    - docker
+
+- name: Deploy Jenkins
+  hosts: jenkins
+  become: yes
+  roles:
+    - jenkins
+
+- name: Deploy Nexus
+  hosts: nexus
+  become: yes
+  roles:
+    - nexus
+
+- name: Deploy SonarQube
+  hosts: sonar
+  become: yes
+  roles:
+    - sonarqube
+
+- name: Deploy Nginx Proxy
+  hosts: app
+  become: yes
+  roles:
+    - nginx

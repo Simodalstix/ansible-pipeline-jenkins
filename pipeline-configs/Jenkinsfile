@@ -1,0 +1,107 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_REGISTRY = 'nexus.local:8082'
+        APP_NAME = 'sample-api'
+        SONAR_HOST = 'http://sonar.local'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                dir('sample-app') {
+                    sh 'npm ci'
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                dir('sample-app') {
+                    sh 'npm test'
+                }
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: 'sample-app/test-results.xml'
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                dir('sample-app') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'sonar-scanner'
+                    }
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                dir('sample-app') {
+                    script {
+                        def image = docker.build("${APP_NAME}:${BUILD_NUMBER}")
+                        docker.withRegistry("http://${DOCKER_REGISTRY}", 'nexus-credentials') {
+                            image.push()
+                            image.push('latest')
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Staging') {
+            steps {
+                sh """
+                    docker stop ${APP_NAME} || true
+                    docker rm ${APP_NAME} || true
+                    docker run -d --name ${APP_NAME} -p 3000:3000 ${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}
+                """
+            }
+        }
+        
+        stage('Health Check') {
+            steps {
+                script {
+                    sleep 10
+                    sh 'curl -f http://localhost:3000/health || exit 1'
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            slackSend(
+                color: 'good',
+                message: "✅ Pipeline succeeded: ${env.JOB_NAME} - ${env.BUILD_NUMBER}"
+            )
+        }
+        failure {
+            slackSend(
+                color: 'danger',
+                message: "❌ Pipeline failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}"
+            )
+        }
+    }
+}

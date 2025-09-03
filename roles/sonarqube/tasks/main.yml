@@ -1,0 +1,88 @@
+---
+- name: Install Java 11
+  apt:
+    name: openjdk-11-jdk
+    state: present
+
+- name: Install PostgreSQL
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - python3-psycopg2
+    state: present
+
+- name: Start PostgreSQL
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create SonarQube database
+  postgresql_db:
+    name: sonarqube
+    state: present
+  become_user: postgres
+
+- name: Create SonarQube user
+  postgresql_user:
+    name: sonarqube
+    password: "{{ sonar_db_password }}"
+    db: sonarqube
+    priv: ALL
+    state: present
+  become_user: postgres
+
+- name: Create sonarqube system user
+  user:
+    name: sonarqube
+    system: yes
+    shell: /bin/bash
+    home: /opt/sonarqube
+
+- name: Download SonarQube
+  get_url:
+    url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.9.0.65466.zip
+    dest: /tmp/sonarqube.zip
+
+- name: Extract SonarQube
+  unarchive:
+    src: /tmp/sonarqube.zip
+    dest: /opt
+    remote_src: yes
+    owner: sonarqube
+    group: sonarqube
+
+- name: Create symlink
+  file:
+    src: /opt/sonarqube-9.9.0.65466
+    dest: /opt/sonarqube
+    state: link
+    owner: sonarqube
+    group: sonarqube
+
+- name: Configure SonarQube
+  template:
+    src: sonar.properties.j2
+    dest: /opt/sonarqube/conf/sonar.properties
+    owner: sonarqube
+    group: sonarqube
+  notify: restart sonarqube
+
+- name: Configure SonarQube service
+  template:
+    src: sonarqube.service.j2
+    dest: /etc/systemd/system/sonarqube.service
+  notify: restart sonarqube
+
+- name: Configure firewall for SonarQube
+  ufw:
+    rule: allow
+    port: "9000"
+
+- name: Start SonarQube service
+  systemd:
+    name: sonarqube
+    state: started
+    enabled: yes
+    daemon_reload: yes

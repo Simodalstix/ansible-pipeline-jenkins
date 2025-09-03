@@ -1,0 +1,46 @@
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Remove default site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+
+- name: Configure Jenkins proxy
+  template:
+    src: jenkins.conf.j2
+    dest: /etc/nginx/sites-available/jenkins.conf
+  notify: restart nginx
+
+- name: Configure Nexus proxy
+  template:
+    src: nexus.conf.j2
+    dest: /etc/nginx/sites-available/nexus.conf
+  notify: restart nginx
+
+- name: Configure SonarQube proxy
+  template:
+    src: sonar.conf.j2
+    dest: /etc/nginx/sites-available/sonar.conf
+  notify: restart nginx
+
+- name: Enable sites
+  file:
+    src: "/etc/nginx/sites-available/{{ item }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item }}.conf"
+    state: link
+  loop:
+    - jenkins
+    - nexus
+    - sonar
+  notify: restart nginx
+
+- name: Start Nginx service
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
