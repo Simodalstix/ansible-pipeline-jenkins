@@ -3,6 +3,7 @@
   apt:
     name: openjdk-11-jdk
     state: present
+  tags: sonarqube
 
 - name: Install PostgreSQL
   apt:
@@ -11,18 +12,21 @@
       - postgresql-contrib
       - python3-psycopg2
     state: present
+  tags: sonarqube
 
 - name: Start PostgreSQL
   systemd:
     name: postgresql
     state: started
     enabled: yes
+  tags: sonarqube
 
 - name: Create SonarQube database
   postgresql_db:
     name: sonarqube
     state: present
   become_user: postgres
+  tags: sonarqube
 
 - name: Create SonarQube user
   postgresql_user:
@@ -32,6 +36,7 @@
     priv: ALL
     state: present
   become_user: postgres
+  tags: sonarqube
 
 - name: Configure PostgreSQL for low memory
   lineinfile:
@@ -42,6 +47,7 @@
     - { regexp: '^#?shared_buffers', line: 'shared_buffers = 128MB' }
     - { regexp: '^#?effective_cache_size', line: 'effective_cache_size = 512MB' }
   notify: restart postgresql
+  tags: sonarqube
 
 - name: Create sonarqube system user
   user:
@@ -49,11 +55,13 @@
     system: yes
     shell: /bin/bash
     home: /opt/sonarqube
+  tags: sonarqube
 
 - name: Download SonarQube
   get_url:
     url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.9.0.65466.zip
     dest: /tmp/sonarqube.zip
+  tags: sonarqube
 
 - name: Extract SonarQube
   unarchive:
@@ -62,6 +70,7 @@
     remote_src: yes
     owner: sonarqube
     group: sonarqube
+  tags: sonarqube
 
 - name: Create symlink
   file:
@@ -70,6 +79,7 @@
     state: link
     owner: sonarqube
     group: sonarqube
+  tags: sonarqube
 
 - name: Configure SonarQube
   template:
@@ -78,17 +88,20 @@
     owner: sonarqube
     group: sonarqube
   notify: restart sonarqube
+  tags: sonarqube
 
 - name: Configure SonarQube service
   template:
     src: sonarqube.service.j2
     dest: /etc/systemd/system/sonarqube.service
   notify: restart sonarqube
+  tags: sonarqube
 
 - name: Configure firewall for SonarQube
   ufw:
     rule: allow
     port: "9000"
+  tags: sonarqube
 
 - name: Start SonarQube service
   systemd:
@@ -96,3 +109,4 @@
     state: started
     enabled: yes
     daemon_reload: yes
+  tags: sonarqube

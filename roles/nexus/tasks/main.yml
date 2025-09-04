@@ -3,6 +3,7 @@
   apt:
     name: openjdk-8-jdk
     state: present
+  tags: nexus
 
 - name: Create nexus user
   user:
@@ -10,11 +11,13 @@
     system: yes
     shell: /bin/bash
     home: /opt/nexus
+  tags: nexus
 
 - name: Download Nexus
   get_url:
     url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
     dest: /tmp/nexus.tar.gz
+  tags: nexus
 
 - name: Extract Nexus
   unarchive:
@@ -23,6 +26,7 @@
     remote_src: yes
     owner: nexus
     group: nexus
+  tags: nexus
 
 - name: Create symlink
   file:
@@ -31,6 +35,7 @@
     state: link
     owner: nexus
     group: nexus
+  tags: nexus
 
 - name: Configure Nexus JVM options
   template:
@@ -38,17 +43,20 @@
     dest: /opt/nexus/bin/nexus.vmoptions
     owner: nexus
     group: nexus
+  tags: nexus
 
 - name: Configure Nexus service
   template:
     src: nexus.service.j2
     dest: /etc/systemd/system/nexus.service
   notify: restart nexus
+  tags: nexus
 
 - name: Configure firewall for Nexus
   ufw:
     rule: allow
     port: "8081"
+  tags: nexus
 
 - name: Start Nexus service
   systemd:
@@ -56,3 +64,4 @@
     state: started
     enabled: yes
     daemon_reload: yes
+  tags: nexus

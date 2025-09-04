@@ -1,24 +1,72 @@
 ---
-- name: Install Java 11
+- name: Clean apt cache
+  shell: |
+    sudo apt clean
+    sudo rm -rf /var/lib/apt/lists/*
+    sudo apt update
+
+- name: Remove Java 11 completely
   apt:
-    name: openjdk-11-jdk
+    name:
+      - openjdk-11-jdk
+      - openjdk-11-jre
+      - openjdk-11-jre-headless
+    state: absent
+    purge: yes
+
+- name: Remove Java 11 directories
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /usr/lib/jvm/java-11-openjdk-amd64
+    - /etc/java-11-openjdk
+
+- name: Install Java 17
+  apt:
+    name: openjdk-17-jdk
     state: present
+    update_cache: yes
+
+- name: Set Java 17 as default
+  alternatives:
+    name: java
+    path: /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+    priority: 2000
+
+- name: Set JAVA_HOME permanently
+  lineinfile:
+    path: /etc/environment
+    line: 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
+    create: yes
+
+- name: Configure Jenkins to use Java 17
+  lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^JAVA_HOME='
+    line: 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
+    create: yes
 
 - name: Add Jenkins GPG key
-  apt_key:
+  get_url:
     url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    dest: /tmp/jenkins.key
+
+- name: Import Jenkins GPG key
+  apt_key:
+    file: /tmp/jenkins.key
     state: present
 
 - name: Add Jenkins repository
   apt_repository:
     repo: "deb https://pkg.jenkins.io/debian-stable binary/"
     state: present
+    update_cache: yes
 
 - name: Install Jenkins
   apt:
     name: jenkins
     state: present
-    update_cache: yes
 
 - name: Configure firewall for Jenkins
   ufw:
@@ -36,11 +84,27 @@
     port: 8080
     delay: 30
 
+- name: Check if Jenkins password file exists
+  stat:
+    path: /var/lib/jenkins/secrets/initialAdminPassword
+  register: jenkins_password_file
+  tags: jenkins
+
 - name: Get Jenkins initial password
   slurp:
     src: /var/lib/jenkins/secrets/initialAdminPassword
   register: jenkins_password
+  when: jenkins_password_file.stat.exists
+  tags: jenkins
 
 - name: Display Jenkins initial password
   debug:
     msg: "Jenkins initial password: {{ jenkins_password.content | b64decode }}"
+  when: jenkins_password_file.stat.exists
+  tags: jenkins
+
+- name: Jenkins password not ready yet
+  debug:
+    msg: "Jenkins is starting up. Password file will be created in 1-2 minutes."
+  when: not jenkins_password_file.stat.exists
+  tags: jenkins
