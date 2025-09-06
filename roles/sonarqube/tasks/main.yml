@@ -1,7 +1,7 @@
 ---
-- name: Install Java 11
+- name: Install Java 17
   apt:
-    name: openjdk-11-jdk
+    name: openjdk-17-jdk
     state: present
   tags: sonarqube
 
@@ -38,9 +38,14 @@
   become_user: postgres
   tags: sonarqube
 
+- name: Find PostgreSQL version
+  shell: ls /etc/postgresql/ | head -1
+  register: pg_version
+  tags: sonarqube
+
 - name: Configure PostgreSQL for low memory
   lineinfile:
-    path: /etc/postgresql/14/main/postgresql.conf
+    path: "/etc/postgresql/{{ pg_version.stdout }}/main/postgresql.conf"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
   loop:
@@ -59,7 +64,7 @@
 
 - name: Download SonarQube
   get_url:
-    url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.9.0.65466.zip
+    url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.6.0.92116.zip
     dest: /tmp/sonarqube.zip
   tags: sonarqube
 
@@ -74,7 +79,7 @@
 
 - name: Create symlink
   file:
-    src: /opt/sonarqube-9.9.0.65466
+    src: /opt/sonarqube-10.6.0.92116
     dest: /opt/sonarqube
     state: link
     owner: sonarqube

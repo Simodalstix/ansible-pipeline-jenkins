@@ -1,10 +1,16 @@
 ---
-- name: Update apt cache
+- name: Update package cache (Ubuntu)
   apt:
     update_cache: yes
     cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
 
-- name: Install common packages
+- name: Update package cache (Rocky Linux)
+  dnf:
+    update_cache: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Install common packages (Ubuntu)
   apt:
     name:
       - curl
@@ -14,8 +20,21 @@
       - htop
       - ufw
     state: present
+  when: ansible_os_family == "Debian"
 
-- name: Configure firewall
+- name: Install common packages (Rocky Linux)
+  dnf:
+    name:
+      - curl
+      - wget
+      - unzip
+      - git
+      - htop
+      - firewalld
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Configure firewall (Ubuntu)
   ufw:
     rule: allow
     port: "{{ item }}"
@@ -23,7 +42,28 @@
     - "22"
     - "80"
     - "443"
+  when: ansible_os_family == "Debian"
 
-- name: Enable firewall
+- name: Configure firewall (Rocky Linux)
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  loop:
+    - "22"
+    - "80"
+    - "443"
+  when: ansible_os_family == "RedHat"
+
+- name: Enable firewall (Ubuntu)
   ufw:
     state: enabled
+  when: ansible_os_family == "Debian"
+
+- name: Enable firewall (Rocky Linux)
+  systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+  when: ansible_os_family == "RedHat"

@@ -11,6 +11,14 @@
   roles:
     - docker
 
+- name: Deploy CI/CD Stack
+  hosts: cicd
+  become: yes
+  roles:
+    - jenkins
+    - nexus
+    - sonarqube
+
 - name: Deploy App Server
   hosts: app
   become: yes

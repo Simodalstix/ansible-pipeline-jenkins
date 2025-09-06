@@ -4,9 +4,9 @@
 Complete CI/CD pipeline infrastructure using Jenkins, Nexus, SonarQube with Ansible automation. Integrates with GitHub for source control and demonstrates modern DevOps practices.
 
 ## Architecture
-2-VM Setup:
-- **cicd-server** (4GB RAM) - Jenkins + Nexus + SonarQube
-- **app-server** (2GB RAM) - Nginx proxy + deployment target
+2-System Setup:
+- **rocky-cicd** (Rocky Linux 9) - Jenkins + Nexus + SonarQube
+- **app-server** (Ubuntu 22.04) - Nginx proxy + deployment target
 
 ## Quick Start
 

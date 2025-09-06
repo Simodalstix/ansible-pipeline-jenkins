@@ -22,17 +22,32 @@
     - /usr/lib/jvm/java-11-openjdk-amd64
     - /etc/java-11-openjdk
 
-- name: Install Java 17
+- name: Install Java 17 (Ubuntu)
   apt:
     name: openjdk-17-jdk
     state: present
     update_cache: yes
+  when: ansible_os_family == "Debian"
 
-- name: Set Java 17 as default
+- name: Install Java 17 (Rocky Linux)
+  dnf:
+    name: java-17-openjdk-devel
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Set Java 17 as default (Ubuntu)
   alternatives:
     name: java
     path: /usr/lib/jvm/java-17-openjdk-amd64/bin/java
     priority: 2000
+  when: ansible_os_family == "Debian"
+
+- name: Set Java 17 as default (Rocky Linux)
+  alternatives:
+    name: java
+    path: /usr/lib/jvm/java-17-openjdk/bin/java
+    priority: 2000
+  when: ansible_os_family == "RedHat"
 
 - name: Set JAVA_HOME permanently
   lineinfile:
@@ -57,21 +72,47 @@
     file: /tmp/jenkins.key
     state: present
 
-- name: Add Jenkins repository
+- name: Add Jenkins repository (Ubuntu)
   apt_repository:
     repo: "deb https://pkg.jenkins.io/debian-stable binary/"
     state: present
     update_cache: yes
+  when: ansible_os_family == "Debian"
 
-- name: Install Jenkins
+- name: Add Jenkins repository (Rocky Linux)
+  yum_repository:
+    name: jenkins
+    description: Jenkins Repository
+    baseurl: https://pkg.jenkins.io/redhat-stable/
+    gpgkey: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    gpgcheck: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Install Jenkins (Ubuntu)
   apt:
     name: jenkins
     state: present
+  when: ansible_os_family == "Debian"
 
-- name: Configure firewall for Jenkins
+- name: Install Jenkins (Rocky Linux)
+  dnf:
+    name: jenkins
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Configure firewall for Jenkins (Ubuntu)
   ufw:
     rule: allow
     port: "8080"
+  when: ansible_os_family == "Debian"
+
+- name: Configure firewall for Jenkins (Rocky Linux)
+  firewalld:
+    port: 8080/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: ansible_os_family == "RedHat"
 
 - name: Start Jenkins service
   systemd:
