@@ -15,7 +15,7 @@
 
 - name: Download Nexus
   get_url:
-    url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+    url: https://download.sonatype.com/nexus/3/nexus-3.70.1-02-unix.tar.gz
     dest: /tmp/nexus.tar.gz
   tags: nexus
 
@@ -30,7 +30,7 @@
 
 - name: Create symlink
   file:
-    src: /opt/nexus-3.*
+    src: /opt/nexus-3.70.1-02
     dest: /opt/nexus
     state: link
     owner: nexus

@@ -1,5 +1,5 @@
 ---
-- name: Deploy CI/CD Infrastructure
+- name: Deploy Base Infrastructure
   hosts: all
   become: yes
   roles:
@@ -10,14 +10,6 @@
   become: yes
   roles:
     - docker
-
-- name: Deploy CI/CD Stack
-  hosts: cicd
-  become: yes
-  roles:
-    - jenkins
-    - nexus
-    - sonarqube
 
 - name: Deploy App Server
   hosts: app
