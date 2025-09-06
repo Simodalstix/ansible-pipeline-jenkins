@@ -1,17 +1,42 @@
 ---
-- name: Install Java 17
+- name: Install Java 17 (Ubuntu)
   apt:
     name: openjdk-17-jdk
     state: present
+  when: ansible_os_family == "Debian"
   tags: sonarqube
 
-- name: Install PostgreSQL
+- name: Install Java 21 (Rocky Linux)
+  dnf:
+    name: java-21-openjdk-devel
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags: sonarqube
+
+- name: Install PostgreSQL (Ubuntu)
   apt:
     name:
       - postgresql
       - postgresql-contrib
       - python3-psycopg2
     state: present
+  when: ansible_os_family == "Debian"
+  tags: sonarqube
+
+- name: Install PostgreSQL (Rocky Linux)
+  dnf:
+    name:
+      - postgresql-server
+      - postgresql-contrib
+      - python3-psycopg2
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags: sonarqube
+
+- name: Initialize PostgreSQL (Rocky Linux)
+  shell: postgresql-setup --initdb
+  when: ansible_os_family == "RedHat"
+  ignore_errors: yes
   tags: sonarqube
 
 - name: Start PostgreSQL
@@ -31,19 +56,20 @@
 - name: Create SonarQube user
   postgresql_user:
     name: sonarqube
-    password: "{{ sonar_db_password }}"
+    password: "{{ vault_sonar_db_password }}"
     db: sonarqube
     priv: ALL
     state: present
   become_user: postgres
   tags: sonarqube
 
-- name: Find PostgreSQL version
+- name: Find PostgreSQL version (Ubuntu)
   shell: ls /etc/postgresql/ | head -1
   register: pg_version
+  when: ansible_os_family == "Debian"
   tags: sonarqube
 
-- name: Configure PostgreSQL for low memory
+- name: Configure PostgreSQL for low memory (Ubuntu)
   lineinfile:
     path: "/etc/postgresql/{{ pg_version.stdout }}/main/postgresql.conf"
     regexp: "{{ item.regexp }}"
@@ -51,6 +77,19 @@
   loop:
     - { regexp: '^#?shared_buffers', line: 'shared_buffers = 128MB' }
     - { regexp: '^#?effective_cache_size', line: 'effective_cache_size = 512MB' }
+  when: ansible_os_family == "Debian"
+  notify: restart postgresql
+  tags: sonarqube
+
+- name: Configure PostgreSQL for low memory (Rocky Linux)
+  lineinfile:
+    path: "/var/lib/pgsql/data/postgresql.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^#?shared_buffers', line: 'shared_buffers = 128MB' }
+    - { regexp: '^#?effective_cache_size', line: 'effective_cache_size = 512MB' }
+  when: ansible_os_family == "RedHat"
   notify: restart postgresql
   tags: sonarqube
 
@@ -66,6 +105,9 @@
   get_url:
     url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.6.0.92116.zip
     dest: /tmp/sonarqube.zip
+    timeout: 60
+    retries: 3
+    delay: 10
   tags: sonarqube
 
 - name: Extract SonarQube
@@ -102,10 +144,20 @@
   notify: restart sonarqube
   tags: sonarqube
 
-- name: Configure firewall for SonarQube
+- name: Configure firewall for SonarQube (Ubuntu)
   ufw:
     rule: allow
     port: "9000"
+  when: ansible_os_family == "Debian"
+  tags: sonarqube
+
+- name: Configure firewall for SonarQube (Rocky Linux)
+  firewalld:
+    port: 9000/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: ansible_os_family == "RedHat"
   tags: sonarqube
 
 - name: Start SonarQube service

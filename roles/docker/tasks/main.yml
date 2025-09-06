@@ -1,5 +1,5 @@
 ---
-- name: Install Docker dependencies
+- name: Install Docker dependencies (Ubuntu)
   apt:
     name:
       - apt-transport-https
@@ -7,18 +7,39 @@
       - gnupg
       - lsb-release
     state: present
+  when: ansible_os_family == "Debian"
 
-- name: Add Docker GPG key
+- name: Install Docker dependencies (Rocky Linux)
+  dnf:
+    name:
+      - dnf-plugins-core
+      - device-mapper-persistent-data
+      - lvm2
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Add Docker GPG key (Ubuntu)
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
+  when: ansible_os_family == "Debian"
 
-- name: Add Docker repository
+- name: Add Docker repository (Ubuntu)
   apt_repository:
     repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
     state: present
+  when: ansible_os_family == "Debian"
 
-- name: Install Docker
+- name: Add Docker repository (Rocky Linux)
+  yum_repository:
+    name: docker-ce
+    description: Docker CE Repository
+    baseurl: https://download.docker.com/linux/centos/9/x86_64/stable/
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    gpgcheck: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Install Docker (Ubuntu)
   apt:
     name:
       - docker-ce
@@ -27,6 +48,29 @@
       - docker-compose-plugin
     state: present
     update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install Docker (Rocky Linux)
+  dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install Docker Python library (Ubuntu)
+  apt:
+    name: python3-docker
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install Docker Python library (Rocky Linux)
+  dnf:
+    name: python3-docker
+    state: present
+  when: ansible_os_family == "RedHat"
 
 - name: Start Docker service
   systemd:

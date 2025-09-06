@@ -1,26 +1,5 @@
 ---
-- name: Clean apt cache
-  shell: |
-    sudo apt clean
-    sudo rm -rf /var/lib/apt/lists/*
-    sudo apt update
 
-- name: Remove Java 11 completely
-  apt:
-    name:
-      - openjdk-11-jdk
-      - openjdk-11-jre
-      - openjdk-11-jre-headless
-    state: absent
-    purge: yes
-
-- name: Remove Java 11 directories
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /usr/lib/jvm/java-11-openjdk-amd64
-    - /etc/java-11-openjdk
 
 - name: Install Java 17 (Ubuntu)
   apt:
@@ -29,9 +8,9 @@
     update_cache: yes
   when: ansible_os_family == "Debian"
 
-- name: Install Java 17 (Rocky Linux)
+- name: Install Java 21 (Rocky Linux)
   dnf:
-    name: java-17-openjdk-devel
+    name: java-21-openjdk-devel
     state: present
   when: ansible_os_family == "RedHat"
 
@@ -42,12 +21,7 @@
     priority: 2000
   when: ansible_os_family == "Debian"
 
-- name: Set Java 17 as default (Rocky Linux)
-  alternatives:
-    name: java
-    path: /usr/lib/jvm/java-17-openjdk/bin/java
-    priority: 2000
-  when: ansible_os_family == "RedHat"
+
 
 - name: Set JAVA_HOME permanently
   lineinfile:
@@ -67,10 +41,17 @@
     url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
     dest: /tmp/jenkins.key
 
-- name: Import Jenkins GPG key
+- name: Import Jenkins GPG key (Ubuntu)
   apt_key:
     file: /tmp/jenkins.key
     state: present
+  when: ansible_os_family == "Debian"
+
+- name: Import Jenkins GPG key (Rocky Linux)
+  rpm_key:
+    key: /tmp/jenkins.key
+    state: present
+  when: ansible_os_family == "RedHat"
 
 - name: Add Jenkins repository (Ubuntu)
   apt_repository:
@@ -123,7 +104,9 @@
 - name: Wait for Jenkins to start
   wait_for:
     port: 8080
-    delay: 30
+    delay: 10
+    timeout: 120
+  ignore_errors: yes
 
 - name: Check if Jenkins password file exists
   stat:

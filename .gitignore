@@ -4,3 +4,7 @@
 *.log
 node_modules/
 coverage/
+# Large binary files
+roles/*/files/*.tar.gz
+roles/*/files/*.tar
+roles/*/files/*.zip

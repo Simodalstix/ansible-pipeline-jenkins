@@ -22,6 +22,12 @@
     state: present
   when: ansible_os_family == "Debian"
 
+- name: Enable EPEL repository (Rocky Linux)
+  dnf:
+    name: epel-release
+    state: present
+  when: ansible_os_family == "RedHat"
+
 - name: Install common packages (Rocky Linux)
   dnf:
     name:

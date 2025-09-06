@@ -1,8 +1,16 @@
 ---
-- name: Install Java 17
+- name: Install Java 21 (Ubuntu)
   apt:
     name: openjdk-17-jdk
     state: present
+  when: ansible_os_family == "Debian"
+  tags: nexus
+
+- name: Install Java 21 (Rocky Linux)
+  dnf:
+    name: java-21-openjdk
+    state: present
+  when: ansible_os_family == "RedHat"
   tags: nexus
 
 - name: Create nexus user
@@ -13,9 +21,9 @@
     home: /opt/nexus
   tags: nexus
 
-- name: Download Nexus
-  get_url:
-    url: https://download.sonatype.com/nexus/3/nexus-3.70.1-02-unix.tar.gz
+- name: Copy Nexus tar file
+  copy:
+    src: nexus-3.83.0-08-linux-x86_64.tar.gz
     dest: /tmp/nexus.tar.gz
   tags: nexus
 
@@ -28,21 +36,22 @@
     group: nexus
   tags: nexus
 
+- name: Find extracted Nexus directory
+  find:
+    paths: /opt
+    patterns: "nexus-*"
+    file_type: directory
+  register: nexus_dir
+  tags: nexus
+
 - name: Create symlink
   file:
-    src: /opt/nexus-3.70.1-02
+    src: "{{ nexus_dir.files[0].path }}"
     dest: /opt/nexus
     state: link
     owner: nexus
     group: nexus
-  tags: nexus
-
-- name: Configure Nexus JVM options
-  template:
-    src: nexus.vmoptions.j2
-    dest: /opt/nexus/bin/nexus.vmoptions
-    owner: nexus
-    group: nexus
+  when: nexus_dir.files|length > 0
   tags: nexus
 
 - name: Configure Nexus service
@@ -52,10 +61,20 @@
   notify: restart nexus
   tags: nexus
 
-- name: Configure firewall for Nexus
+- name: Configure firewall for Nexus (Ubuntu)
   ufw:
     rule: allow
     port: "8081"
+  when: ansible_os_family == "Debian"
+  tags: nexus
+
+- name: Configure firewall for Nexus (Rocky Linux)
+  firewalld:
+    port: 8081/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: ansible_os_family == "RedHat"
   tags: nexus
 
 - name: Start Nexus service

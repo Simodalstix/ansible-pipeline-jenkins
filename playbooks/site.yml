@@ -5,11 +5,7 @@
   roles:
     - common
 
-- name: Setup Docker
-  hosts: all
-  become: yes
-  roles:
-    - docker
+
 
 - name: Deploy CI/CD Stack
   hosts: cicd
