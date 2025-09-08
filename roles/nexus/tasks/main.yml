@@ -6,9 +6,19 @@
   when: ansible_os_family == "Debian"
   tags: nexus
 
-- name: Install Java 21 (Rocky Linux)
+- name: Add Eclipse Temurin repository (Rocky Linux)
+  yum_repository:
+    name: adoptium
+    description: Eclipse Temurin
+    baseurl: https://packages.adoptium.net/artifactory/rpm/rhel/9/x86_64
+    gpgkey: https://packages.adoptium.net/artifactory/api/gpg/key/public
+    gpgcheck: yes
+  when: ansible_os_family == "RedHat"
+  tags: nexus
+
+- name: Install Java 17 (Rocky Linux)
   dnf:
-    name: java-21-openjdk
+    name: temurin-17-jdk
     state: present
   when: ansible_os_family == "RedHat"
   tags: nexus
@@ -23,8 +33,14 @@
 
 - name: Copy Nexus tar file
   copy:
-    src: nexus-3.83.0-08-linux-x86_64.tar.gz
+    src: nexus-3.70.1-02-unix.tar.gz
     dest: /tmp/nexus.tar.gz
+  tags: nexus
+
+- name: Check if Nexus is already extracted
+  stat:
+    path: /opt/nexus-3.83.0-08
+  register: nexus_extracted
   tags: nexus
 
 - name: Extract Nexus
@@ -34,24 +50,30 @@
     remote_src: yes
     owner: nexus
     group: nexus
+    creates: /opt/nexus-3.83.0-08
+  when: not nexus_extracted.stat.exists
   tags: nexus
 
-- name: Find extracted Nexus directory
+- name: Find extracted Nexus application directory
   find:
     paths: /opt
-    patterns: "nexus-*"
+    patterns: "nexus-3.*"
     file_type: directory
-  register: nexus_dir
+  register: nexus_app_dir
   tags: nexus
 
-- name: Create symlink
+- name: Remove existing nexus symlink
   file:
-    src: "{{ nexus_dir.files[0].path }}"
+    path: /opt/nexus
+    state: absent
+  tags: nexus
+
+- name: Create symlink to Nexus application
+  file:
+    src: "{{ nexus_app_dir.files[0].path }}"
     dest: /opt/nexus
     state: link
-    owner: nexus
-    group: nexus
-  when: nexus_dir.files|length > 0
+  when: nexus_app_dir.files|length > 0
   tags: nexus
 
 - name: Configure Nexus service

@@ -8,7 +8,7 @@
 
 - name: Install Java 21 (Rocky Linux)
   dnf:
-    name: java-21-openjdk-devel
+    name: java-21-openjdk
     state: present
   when: ansible_os_family == "RedHat"
   tags: sonarqube
@@ -46,6 +46,11 @@
     enabled: yes
   tags: sonarqube
 
+- name: Set SonarQube password as fact
+  set_fact:
+    sonar_password: "{{ sonar_db_password }}"
+  tags: sonarqube
+
 - name: Create SonarQube database
   postgresql_db:
     name: sonarqube
@@ -56,7 +61,7 @@
 - name: Create SonarQube user
   postgresql_user:
     name: sonarqube
-    password: "{{ vault_sonar_db_password }}"
+    password: "{{ sonar_password }}"
     db: sonarqube
     priv: ALL
     state: present

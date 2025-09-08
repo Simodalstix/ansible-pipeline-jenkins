@@ -1,0 +1,5 @@
+---
+# Non-sensitive variables
+sonar_db_password: sonar123
+nexus_admin_password: admin123
+jenkins_admin_password: admin123

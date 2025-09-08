@@ -8,3 +8,4 @@ coverage/
 roles/*/files/*.tar.gz
 roles/*/files/*.tar
 roles/*/files/*.zip
+*OpenJDK*
